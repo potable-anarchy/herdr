@@ -88,8 +88,9 @@ What the space theme paints:
   space is active: label, secondary text, and row highlight colours come from
   the space palette, and a one-column accent bar in the space palette's
   `accent` colour is drawn at the leading edge of the row. The bar occupies
-  the leading column of the row and is drawn in both expanded and collapsed
-  sidebars.
+  the leading column of the row in the expanded sidebar. In the collapsed
+  sidebar, the space number is drawn bold in the space accent colour instead
+  of a bar, because the two-column number leaves no spare column.
 
 What stays on the global theme: sidebar background, header, footer, and
 separator; the agents panel; status bars and the mode bar; every overlay and
@@ -124,13 +125,13 @@ the endpoint API and the client UI.
 
 ### Palette resolution
 
-Server side, `AppState` gains a `workspace_palettes: HashMap<String, Palette>`
-keyed by workspace id, holding a resolved palette only for spaces with an
-override. It is rebuilt when a space theme is set or cleared, when a
-workspace is removed, on config reload, and on host appearance change (the
-same places `refresh_effective_app_theme` runs). A helper
-`AppState::palette_for_workspace(&self, workspace_id) -> &Palette` returns the
-override palette or `self.palette`.
+Server side, `AppState` gains a `workspace_theme_palettes: HashMap<String, Palette>`
+keyed by canonical theme name, holding a resolved palette for every theme
+some space overrides to. It is rebuilt when a space theme is set or cleared,
+on config reload, and on host appearance change (wherever
+`refresh_effective_app_theme` runs), and once after session restore. A helper
+`AppState::palette_for_workspace(&self, workspace_id) -> &Palette` looks up the
+space's theme name and returns that palette or `self.palette`.
 
 Client side, the per-space snapshot entry (`ClientShellWorkspace` or its
 equivalent) carries `theme: Option<String>`. `ClientShellState` gains a
@@ -143,9 +144,8 @@ overlay's preview palette takes precedence for the targeted space.
 ### Rendering changes
 
 - `src/ui/panes.rs`: split borders and pane titles use
-  `app.palette_for_workspace(active_workspace_id)` in place of `app.palette`.
-- `src/client/shell/composition.rs`: the pane border uses the active space
-  palette.
+  `app.palette_for_workspace(&ws.id)` in place of `app.palette`. Pane frames
+  are drawn only by the server; the client blits the surface it receives.
 - `src/client/shell/tabs.rs`: the tab bar uses the active space palette.
 - `src/client/shell/sidebar.rs`, expanded and collapsed: each row uses its own
   space palette for label, secondary, and highlight colours, and draws the

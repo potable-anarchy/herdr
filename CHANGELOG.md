@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+- Added `ui.focus_follows_mouse`, an opt-in setting (also under Settings → focus) that focuses the pane under the pointer without a click.
+- Spaces can now carry their own theme: right-click a space and choose Theme... to pick one. It colours that space's pane borders, tab bar, and sidebar row; everything else keeps the global theme, and spaces follow the global theme until overridden.
+
 ## [0.8.2] - 2026-08-19
 
 ### Added
