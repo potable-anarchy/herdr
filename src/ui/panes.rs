@@ -461,6 +461,7 @@ fn render_pane_borders(
         return;
     }
 
+    let palette = app.palette_for_workspace(&ws.id);
     let mut cells = std::collections::HashMap::<(u16, u16), LineCell>::new();
     for info in pane_infos {
         add_pane_border_cells(&mut cells, info);
@@ -487,9 +488,9 @@ fn render_pane_borders(
         let cell = &mut buf[(x, y)];
         cell.set_symbol(symbol);
         let color = if focused {
-            app.palette.accent
+            palette.accent
         } else {
-            app.palette.overlay0
+            palette.overlay0
         };
         cell.set_style(Style::default().fg(color));
     }
@@ -625,6 +626,7 @@ fn render_pane_border_titles(
     pane_infos: &[PaneInfo],
     frame: &mut Frame,
 ) {
+    let palette = app.palette_for_workspace(&ws.id);
     let buf = frame.buffer_mut();
     let area = buf.area;
     for info in pane_infos {
@@ -654,9 +656,9 @@ fn render_pane_border_titles(
             continue;
         }
         let color = if info.is_focused {
-            app.palette.accent
+            palette.accent
         } else {
-            app.palette.overlay0
+            palette.overlay0
         };
         let mut style = Style::default().fg(color);
         if info.is_focused {
@@ -828,6 +830,51 @@ mod tests {
         frame: &mut Frame,
     ) {
         render_pane_borders(app, ws, &app.view.pane_infos, split_borders, frame);
+    }
+
+    #[test]
+    fn split_borders_use_the_workspace_theme_palette() {
+        let mut app = AppState::test_new();
+        app.view.terminal_area = Rect::new(0, 0, 4, 4);
+        app.view.pane_infos = vec![
+            PaneInfo {
+                id: PaneId::from_raw(1),
+                rect: Rect::new(0, 0, 2, 2),
+                inner_rect: Rect::default(),
+                scrollbar_rect: None,
+                borders: Borders::ALL,
+                is_focused: true,
+            },
+            PaneInfo {
+                id: PaneId::from_raw(2),
+                rect: Rect::new(2, 0, 2, 2),
+                inner_rect: Rect::default(),
+                scrollbar_rect: None,
+                borders: Borders::ALL,
+                is_focused: false,
+            },
+        ];
+        let split_borders = vec![crate::layout::SplitBorder {
+            pos: 2,
+            direction: ratatui::layout::Direction::Horizontal,
+            ratio: 0.5,
+            area: Rect::new(0, 0, 4, 2),
+            path: vec![],
+        }];
+        let mut ws = Workspace::test_new("themed");
+        ws.theme = Some("nord".into());
+        app.workspaces = vec![ws];
+        app.rebuild_workspace_theme_palettes();
+        let expected = Palette::nord().accent;
+        assert_ne!(expected, app.palette.accent);
+
+        let mut terminal =
+            ratatui::Terminal::new(ratatui::backend::TestBackend::new(4, 4)).unwrap();
+        terminal
+            .draw(|frame| render_view_pane_borders(&app, &app.workspaces[0], &split_borders, frame))
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        assert_eq!(buffer[(0, 0)].style().fg, Some(expected));
     }
 
     #[test]
