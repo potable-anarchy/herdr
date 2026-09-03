@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 // ---------------------------------------------------------------------------
 
 /// Current protocol version. Bumped when wire format changes incompatibly.
-pub const PROTOCOL_VERSION: u32 = 22;
+pub const PROTOCOL_VERSION: u32 = 23;
 
 /// Maximum allowed frame payload size (2 MB). Frames larger than this are
 /// rejected to prevent denial-of-service via oversized length prefixes.
@@ -1023,6 +1023,9 @@ pub struct ClientShellWorkspace {
     pub focused: bool,
     #[serde(deserialize_with = "deserialize_client_shell_agent_status")]
     pub agent_status: crate::api::schema::AgentStatus,
+    /// Per-space theme override (canonical built-in name), `None` when the space follows the global theme.
+    #[serde(default)]
+    pub theme: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -2644,6 +2647,7 @@ mod tests {
             agent_view_label: None,
             agent_order: Vec::new(),
             workspaces: vec![ClientShellWorkspace {
+                theme: None,
                 workspace_id: "w1".into(),
                 active_tab_id: "w1:t1".into(),
                 new_workspace_cwd: "/tmp".into(),
@@ -2690,6 +2694,31 @@ mod tests {
         let (decoded, _): (ServerMessage, _) =
             bincode::serde::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
         assert_eq!(msg, decoded);
+    }
+
+    #[test]
+    fn client_shell_workspace_theme_round_trips() {
+        let workspace = ClientShellWorkspace {
+            workspace_id: "w1".into(),
+            active_tab_id: "w1:t1".into(),
+            new_workspace_cwd: "/tmp".into(),
+            number: 1,
+            label: "shell".into(),
+            custom_label: false,
+            branch: None,
+            git_ahead_behind: None,
+            tokens: Vec::new(),
+            worktree: None,
+            focused: false,
+            agent_status: crate::api::schema::AgentStatus::Idle,
+            theme: Some("nord".into()),
+        };
+        let encoded =
+            bincode::serde::encode_to_vec(&workspace, bincode::config::standard()).unwrap();
+        let (decoded, _): (ClientShellWorkspace, _) =
+            bincode::serde::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+        assert_eq!(decoded.theme.as_deref(), Some("nord"));
+        assert_eq!(PROTOCOL_VERSION, 23);
     }
 
     #[test]

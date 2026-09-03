@@ -52,6 +52,7 @@ fn focused_workspace_change_reveals_new_workspace_in_full_sidebar() {
     let template = initial.workspaces[0].clone();
     initial.workspaces = (1..=12)
         .map(|number| ClientShellWorkspace {
+            theme: None,
             workspace_id: format!("ws_{number}"),
             number,
             label: format!("space-{number}"),

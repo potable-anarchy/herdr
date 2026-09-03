@@ -72,6 +72,7 @@ pub(super) fn snapshot(
                         is_linked_worktree: worktree.is_linked_worktree,
                     }),
                 agent_status: workspace.agent_status,
+                theme: state.theme.clone(),
             }
         })
         .collect();
