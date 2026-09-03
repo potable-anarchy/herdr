@@ -770,3 +770,43 @@ fn resize_mode_reuses_endpoint_resize_and_stays_active_until_done() {
     assert!(state.handle_input_bytes(b"\r").actions.is_empty());
     assert_eq!(state.mode, ClientShellMode::Terminal);
 }
+
+#[test]
+fn settings_focus_section_reflects_config_and_offers_two_choices() {
+    let mut config = Config::default();
+    config.ui.focus_follows_mouse = true;
+    let mut state = ClientShellState::new(ClientShellConfig::from_config(&config));
+    assert!(state.config.focus_follows_mouse);
+    state.set_snapshot(Box::new(snapshot()));
+    state.set_pane_surface(surface());
+    state.open_settings_overlay();
+    state.select_settings_section(
+        ClientSettingsSection::Focus,
+        &mut ClientShellInput::default(),
+    );
+    match state.overlay.as_ref() {
+        Some(ClientShellOverlay::Settings(settings)) => {
+            assert_eq!(settings.section, ClientSettingsSection::Focus);
+            // "on" is index 0, "off" is index 1; config says on.
+            assert_eq!(settings.selected, 0);
+        }
+        _ => panic!("settings overlay"),
+    }
+    state.compose(106, 30).expect("settings overlay frame");
+    assert_eq!(state.hits.settings_choices.len(), 2);
+    assert!(state
+        .hits
+        .settings_tabs
+        .iter()
+        .any(|(_, section)| *section == ClientSettingsSection::Focus));
+}
+
+#[test]
+fn client_config_live_reload_applies_focus_follows_mouse() {
+    let mut config = ClientShellConfig::from_config(&Config::default());
+    assert!(!config.focus_follows_mouse);
+    let mut loaded = Config::default();
+    loaded.ui.focus_follows_mouse = true;
+    config.apply_live_config(&loaded, &[], &[]);
+    assert!(config.focus_follows_mouse);
+}

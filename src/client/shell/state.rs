@@ -98,6 +98,7 @@ pub(crate) struct ClientShellConfig {
     pub(super) prompt_new_workspace_name: bool,
     pub(super) confirm_close: bool,
     pub(super) mouse_capture: bool,
+    pub(super) focus_follows_mouse: bool,
     pub(super) mouse_scroll_lines: usize,
     pub(super) right_click_passthrough_modifiers: Option<crossterm::event::KeyModifiers>,
     pub(super) redraw_on_focus_gained: bool,
@@ -410,6 +411,7 @@ pub(super) enum ClientSettingsSection {
     Theme,
     Indicators,
     Sound,
+    Focus,
     Toast,
     Integrations,
 }
@@ -419,6 +421,7 @@ impl ClientSettingsSection {
         Self::Theme,
         Self::Indicators,
         Self::Sound,
+        Self::Focus,
         Self::Toast,
         Self::Integrations,
     ];
@@ -428,6 +431,7 @@ impl ClientSettingsSection {
             Self::Theme => "theme",
             Self::Indicators => "indicators",
             Self::Sound => "sound",
+            Self::Focus => "focus",
             Self::Toast => "toasts",
             Self::Integrations => "integrations",
         }

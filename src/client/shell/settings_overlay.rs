@@ -182,6 +182,18 @@ pub(super) fn render_settings_overlay(
                 &mut choice_hits,
             );
         }
+        ClientSettingsSection::Focus => {
+            render_choice_section(
+                buffer,
+                content,
+                "focus follows mouse",
+                "focus the pane under the pointer without clicking",
+                &["on", "off"],
+                settings.selected,
+                palette,
+                &mut choice_hits,
+            );
+        }
         ClientSettingsSection::Toast => {
             render_choice_section(
                 buffer,
