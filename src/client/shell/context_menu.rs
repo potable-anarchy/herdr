@@ -6,15 +6,18 @@ impl ClientContextMenuOverlay {
 
         let item = |label, action| ClientContextMenuItem { label, action };
         match &self.target {
-            ClientContextMenuTarget::Workspace { is_git: false, .. } => {
-                vec![item("Rename", Action::Rename), item("Close", Action::Close)]
-            }
+            ClientContextMenuTarget::Workspace { is_git: false, .. } => vec![
+                item("Rename", Action::Rename),
+                item("Theme...", Action::Theme),
+                item("Close", Action::Close),
+            ],
             ClientContextMenuTarget::Workspace {
                 is_linked_worktree: false,
                 has_worktree_children: false,
                 ..
             } => vec![
                 item("Rename", Action::Rename),
+                item("Theme...", Action::Theme),
                 item("Close", Action::Close),
                 item("New worktree", Action::NewWorktree),
                 item("Open worktree...", Action::OpenWorktree),
@@ -24,6 +27,7 @@ impl ClientContextMenuOverlay {
                 ..
             } => vec![
                 item("Rename", Action::Rename),
+                item("Theme...", Action::Theme),
                 item("Close", Action::Close),
                 item("Delete worktree checkout...", Action::RemoveWorktree),
             ],
@@ -33,6 +37,7 @@ impl ClientContextMenuOverlay {
                 ..
             } => vec![
                 item("Rename", Action::Rename),
+                item("Theme...", Action::Theme),
                 item("Close group", Action::Close),
                 item("New worktree", Action::NewWorktree),
                 item("Open worktree...", Action::OpenWorktree),
@@ -245,6 +250,7 @@ impl ClientShellState {
                     }));
                 }
             }
+            ClientContextMenuAction::Theme => self.open_workspace_theme_picker(workspace_id),
             ClientContextMenuAction::Close => {
                 if self.config.confirm_close {
                     self.open_confirm_close_overlay(workspace_id);

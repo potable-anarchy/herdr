@@ -438,12 +438,21 @@ impl ClientSettingsSection {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) enum ClientSettingsTarget {
+    Global,
+    Workspace { workspace_id: String },
+}
+
 #[derive(Debug)]
 pub(super) struct ClientSettingsOverlay {
+    pub(super) target: ClientSettingsTarget,
     pub(super) section: ClientSettingsSection,
     pub(super) selected: usize,
     pub(super) original_theme_name: String,
     pub(super) original_palette: Palette,
+    /// Theme override the targeted space had when the picker opened (space target only).
+    pub(super) original_workspace_theme: Option<String>,
     /// Live preview for a space-targeted picker: `(workspace_id, theme name or None for global)`.
     pub(super) workspace_preview: Option<(String, Option<String>)>,
     pub(super) integrations: Vec<crate::api::schema::IntegrationInfo>,
@@ -451,6 +460,34 @@ pub(super) struct ClientSettingsOverlay {
     pub(super) loading_integrations: bool,
     pub(super) installing_integrations: bool,
 }
+
+impl ClientSettingsOverlay {
+    pub(super) fn sections(&self) -> &'static [ClientSettingsSection] {
+        match self.target {
+            ClientSettingsTarget::Global => ClientSettingsSection::ALL,
+            ClientSettingsTarget::Workspace { .. } => &[ClientSettingsSection::Theme],
+        }
+    }
+
+    /// Theme list rows. For a space target the first row means "follow the global theme".
+    pub(super) fn theme_choices(&self) -> Vec<&'static str> {
+        let mut choices = Vec::with_capacity(crate::config::THEME_NAMES.len() + 1);
+        if matches!(self.target, ClientSettingsTarget::Workspace { .. }) {
+            choices.push(USE_GLOBAL_THEME_CHOICE);
+        }
+        choices.extend(crate::config::THEME_NAMES.iter().copied());
+        choices
+    }
+
+    /// Theme name for a row index, `None` for the "use global theme" row.
+    pub(super) fn theme_for_choice(&self, index: usize) -> Option<Option<&'static str>> {
+        let choices = self.theme_choices();
+        let label = *choices.get(index)?;
+        Some((label != USE_GLOBAL_THEME_CHOICE).then_some(label))
+    }
+}
+
+pub(super) const USE_GLOBAL_THEME_CHOICE: &str = "use global theme";
 
 #[derive(Debug)]
 pub(super) struct ClientWorktreeCreateOverlay {
@@ -542,6 +579,7 @@ pub(super) struct ClientWorktreeRemoveOverlay {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ClientContextMenuAction {
     Rename,
+    Theme,
     Close,
     NewWorktree,
     OpenWorktree,

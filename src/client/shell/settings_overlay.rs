@@ -72,7 +72,7 @@ pub(super) fn render_settings_overlay(
             .any(|integration| integration.state == crate::api::schema::IntegrationState::Outdated);
     let mut tab_x = inner.x;
     let mut tab_hits = Vec::new();
-    for section in ClientSettingsSection::ALL {
+    for section in settings.sections() {
         let badge = *section == ClientSettingsSection::Integrations && integration_badge;
         let label = if badge {
             format!(" ● {} ", section.label())
@@ -129,9 +129,16 @@ pub(super) fn render_settings_overlay(
     let mut choice_hits = Vec::new();
     match settings.section {
         ClientSettingsSection::Theme => {
+            let choices = settings.theme_choices();
             let visible = usize::from(content.height);
             let scroll = settings.selected.saturating_sub(visible.saturating_sub(1));
-            for (visible_index, (index, name)) in crate::config::THEME_NAMES
+            let current_name: Option<&str> = match settings.target {
+                ClientSettingsTarget::Global => Some(settings.original_theme_name.as_str()),
+                ClientSettingsTarget::Workspace { .. } => {
+                    settings.original_workspace_theme.as_deref()
+                }
+            };
+            for (visible_index, (index, name)) in choices
                 .iter()
                 .enumerate()
                 .skip(scroll)
@@ -144,15 +151,20 @@ pub(super) fn render_settings_overlay(
                     content.width,
                     1,
                 );
+                let is_current = match settings.theme_for_choice(index) {
+                    Some(None) => current_name.is_none(),
+                    Some(Some(theme)) => current_name.is_some_and(|current| {
+                        super::super::settings::normalized_theme_name(theme)
+                            == super::super::settings::normalized_theme_name(current)
+                    }),
+                    None => false,
+                };
                 draw_choice(
                     buffer,
                     rect,
                     name,
                     index == settings.selected,
-                    super::super::settings::normalized_theme_name(name)
-                        == super::super::settings::normalized_theme_name(
-                            &settings.original_theme_name,
-                        ),
+                    is_current,
                     palette,
                 );
                 choice_hits.push((rect, index));

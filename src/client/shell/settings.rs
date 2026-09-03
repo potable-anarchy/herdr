@@ -34,10 +34,46 @@ pub(super) fn integration_needs_install(info: &crate::api::schema::IntegrationIn
 impl ClientShellState {
     pub(super) fn open_settings_overlay(&mut self) {
         self.overlay = Some(ClientShellOverlay::Settings(ClientSettingsOverlay {
+            target: ClientSettingsTarget::Global,
             section: ClientSettingsSection::Theme,
             selected: theme_index(&self.config.theme_name),
             original_theme_name: self.config.theme_name.clone(),
             original_palette: self.config.palette.clone(),
+            original_workspace_theme: None,
+            workspace_preview: None,
+            integrations: Vec::new(),
+            integration_messages: Vec::new(),
+            loading_integrations: false,
+            installing_integrations: false,
+        }));
+    }
+
+    /// Open the theme picker for one space. The list gains a leading "use global theme"
+    /// row and the cursor starts on the space's current override.
+    pub(super) fn open_workspace_theme_picker(&mut self, workspace_id: String) {
+        let current = self
+            .snapshot
+            .as_deref()
+            .and_then(|snapshot| {
+                snapshot
+                    .workspaces
+                    .iter()
+                    .find(|workspace| workspace.workspace_id == workspace_id)
+            })
+            .and_then(|workspace| workspace.theme.as_deref())
+            .and_then(crate::config::canonical_theme_name)
+            .map(str::to_owned);
+        let selected = current
+            .as_deref()
+            .and_then(|name| crate::config::THEME_NAMES.iter().position(|n| *n == name))
+            .map_or(0, |index| index + 1);
+        self.overlay = Some(ClientShellOverlay::Settings(ClientSettingsOverlay {
+            target: ClientSettingsTarget::Workspace { workspace_id },
+            section: ClientSettingsSection::Theme,
+            selected,
+            original_theme_name: self.config.theme_name.clone(),
+            original_palette: self.config.palette.clone(),
+            original_workspace_theme: current,
             workspace_preview: None,
             integrations: Vec::new(),
             integration_messages: Vec::new(),
@@ -86,19 +122,19 @@ impl ClientShellState {
         let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_ref() else {
             return;
         };
-        let current = ClientSettingsSection::ALL
+        let sections = settings.sections();
+        let current = sections
             .iter()
             .position(|section| *section == settings.section)
             .unwrap_or(0);
-        let next = (current as isize + delta).rem_euclid(ClientSettingsSection::ALL.len() as isize)
-            as usize;
-        self.select_settings_section(ClientSettingsSection::ALL[next], outcome);
+        let next = (current as isize + delta).rem_euclid(sections.len() as isize) as usize;
+        self.select_settings_section(sections[next], outcome);
     }
 
     fn settings_choice_count(&self) -> usize {
         match self.overlay.as_ref() {
             Some(ClientShellOverlay::Settings(settings)) => match settings.section {
-                ClientSettingsSection::Theme => crate::config::THEME_NAMES.len(),
+                ClientSettingsSection::Theme => settings.theme_choices().len(),
                 ClientSettingsSection::Indicators
                 | ClientSettingsSection::Sound
                 | ClientSettingsSection::Focus => 2,
@@ -144,15 +180,25 @@ impl ClientShellState {
     }
 
     fn preview_selected_theme(&mut self) {
-        let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_ref() else {
+        let Some(ClientShellOverlay::Settings(settings)) = self.overlay.as_mut() else {
             return;
         };
-        let Some(name) = crate::config::THEME_NAMES.get(settings.selected) else {
-            return;
-        };
-        self.config.theme_name = (*name).to_owned();
-        self.config.palette =
-            crate::app::client_palette_for_theme(&self.config.theme_runtime, name);
+        match settings.target.clone() {
+            ClientSettingsTarget::Global => {
+                let Some(name) = crate::config::THEME_NAMES.get(settings.selected) else {
+                    return;
+                };
+                self.config.theme_name = (*name).to_owned();
+                self.config.palette =
+                    crate::app::client_palette_for_theme(&self.config.theme_runtime, name);
+            }
+            ClientSettingsTarget::Workspace { workspace_id } => {
+                let Some(theme) = settings.theme_for_choice(settings.selected) else {
+                    return;
+                };
+                settings.workspace_preview = Some((workspace_id, theme.map(str::to_owned)));
+            }
+        }
     }
 
     pub(super) fn cancel_settings_overlay(&mut self) {
@@ -191,15 +237,35 @@ impl ClientShellState {
         };
         let section = settings.section;
         let selected = settings.selected;
+        let target = settings.target.clone();
+        let workspace_theme = settings.theme_for_choice(selected);
         match section {
-            ClientSettingsSection::Theme => {
-                let Some(name) = crate::config::THEME_NAMES.get(selected).copied() else {
-                    return;
-                };
-                if self.save_settings_edit(crate::config::ConfigEdit::Theme(name), outcome) {
-                    self.overlay = None;
+            ClientSettingsSection::Theme => match target {
+                ClientSettingsTarget::Global => {
+                    let Some(name) = crate::config::THEME_NAMES.get(selected).copied() else {
+                        return;
+                    };
+                    if self.save_settings_edit(crate::config::ConfigEdit::Theme(name), outcome) {
+                        self.overlay = None;
+                    }
                 }
-            }
+                ClientSettingsTarget::Workspace { workspace_id } => {
+                    let Some(theme) = workspace_theme else {
+                        return;
+                    };
+                    self.overlay = None;
+                    self.push_endpoint_method(
+                        crate::api::schema::Method::WorkspaceSetTheme(
+                            crate::api::schema::WorkspaceSetThemeParams {
+                                workspace_id,
+                                theme: theme.map(str::to_owned),
+                            },
+                        ),
+                        outcome,
+                    );
+                    outcome.repaint = true;
+                }
+            },
             ClientSettingsSection::Indicators => {
                 let style = if selected == 0 {
                     crate::config::StatusIndicatorStyle::Dots
