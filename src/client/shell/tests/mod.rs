@@ -211,6 +211,7 @@ fn surface_with_popup() -> PaneSurfaceFrame {
 mod agents_worktrees_notifications;
 mod chrome_context;
 mod copy;
+mod focus_follows_mouse;
 #[path = "input.rs"]
 mod input_domain;
 mod keybindings_settings;

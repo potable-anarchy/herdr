@@ -1447,6 +1447,7 @@ impl ClientShellState {
                         Some(ClientShellOverlay::Settings(ClientSettingsOverlay {
                             section: ClientSettingsSection::Indicators
                                 | ClientSettingsSection::Sound
+                                | ClientSettingsSection::Focus
                                 | ClientSettingsSection::Toast,
                             ..
                         }))
@@ -2214,13 +2215,36 @@ impl ClientShellState {
             MouseEventKind::Up(MouseButton::Left | MouseButton::Middle)
             | MouseEventKind::Drag(MouseButton::Left | MouseButton::Middle) => {}
             MouseEventKind::Moved => {
-                if let Some(hit) = self
+                let hovered = self
                     .hits
                     .panes
                     .iter()
-                    .find(|hit| super::contains(hit.inner_rect, point) && hit.mouse_reporting)
-                    .cloned()
-                {
+                    .find(|hit| super::contains(hit.inner_rect, point))
+                    .cloned();
+                if let Some(hit) = hovered.as_ref() {
+                    let follows_mouse = self.config.focus_follows_mouse
+                        && self.config.mouse_capture
+                        && self.mode == ClientShellMode::Terminal
+                        && self.overlay.is_none()
+                        && self.chrome_drag.is_none()
+                        && self.pane_mouse_gesture.is_none()
+                        && !self
+                            .selection
+                            .as_ref()
+                            .is_some_and(crate::selection::Selection::is_dragging)
+                        && !hit.popup;
+                    if follows_mouse
+                        && self.focused_pane_id().as_deref() != Some(hit.pane_id.as_str())
+                    {
+                        self.push_endpoint_method(
+                            crate::api::schema::Method::PaneFocus(crate::api::schema::PaneTarget {
+                                pane_id: hit.pane_id.clone(),
+                            }),
+                            outcome,
+                        );
+                    }
+                }
+                if let Some(hit) = hovered.filter(|hit| hit.mouse_reporting) {
                     self.push_pane_mouse_event(&hit, mouse, mouse.modifiers, outcome);
                 }
             }
