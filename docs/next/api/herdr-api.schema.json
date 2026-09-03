@@ -4566,6 +4566,24 @@
           ],
           "type": "object"
         },
+        "WorkspaceSetThemeParams": {
+          "properties": {
+            "theme": {
+              "description": "Built-in theme name to apply to this workspace only, or `null` to follow the global theme.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "workspace_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id"
+          ],
+          "type": "object"
+        },
         "WorkspaceTarget": {
           "properties": {
             "workspace_id": {
@@ -5015,6 +5033,22 @@
             },
             "params": {
               "$ref": "#/schemas/request/$defs/WorkspaceRenameParams"
+            }
+          },
+          "required": [
+            "method",
+            "params"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "workspace.set_theme",
+              "type": "string"
+            },
+            "params": {
+              "$ref": "#/schemas/request/$defs/WorkspaceSetThemeParams"
             }
           },
           "required": [

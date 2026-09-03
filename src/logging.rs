@@ -254,6 +254,17 @@ pub(crate) fn workspace_renamed(workspace_id: &str) {
     );
 }
 
+pub(crate) fn workspace_theme_changed(workspace_id: &str, theme: Option<&str>) {
+    tracing::info!(
+        event = "workspace.set_theme",
+        subsystem = "workspace",
+        outcome = "ok",
+        workspace_id,
+        theme = theme.unwrap_or("global"),
+        "workspace theme changed"
+    );
+}
+
 pub(crate) fn tab_focused(workspace_id: &str, tab_id: &str) {
     tracing::info!(
         event = "tab.focus",

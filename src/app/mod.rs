@@ -331,11 +331,19 @@ pub(crate) fn client_theme_runtime_from_config(config: &Config) -> state::ThemeR
     theme_runtime_config(config, true)
 }
 
-pub(crate) fn client_palette_for_theme(
+/// Resolve a named built-in theme through the same override pipeline as the global theme.
+pub(crate) fn named_theme_palette(
     runtime: &state::ThemeRuntimeConfig,
     name: &str,
 ) -> state::Palette {
     resolve_palette_for_theme_name(name, "catppuccin", runtime, None)
+}
+
+pub(crate) fn client_palette_for_theme(
+    runtime: &state::ThemeRuntimeConfig,
+    name: &str,
+) -> state::Palette {
+    named_theme_palette(runtime, name)
 }
 
 pub(crate) fn client_palette_from_config(config: &Config) -> state::Palette {
@@ -505,6 +513,7 @@ impl App {
             palette: theme_palette,
             theme_name,
             theme_runtime,
+            workspace_theme_palettes: std::collections::HashMap::new(),
             host_terminal_appearance: None,
             host_terminal_appearance_explicit: false,
             integration_recommendations: crate::integration::integration_recommendations(),
@@ -521,6 +530,7 @@ impl App {
             session_dirty: false,
             terminal_runtime_shutdowns: Vec::new(),
         };
+        state.rebuild_workspace_theme_palettes();
 
         state.terminals = restored_terminals;
 

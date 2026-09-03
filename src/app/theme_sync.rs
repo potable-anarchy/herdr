@@ -30,6 +30,7 @@ impl App {
     }
 
     pub(super) fn refresh_effective_app_theme(&mut self) -> bool {
+        self.state.rebuild_workspace_theme_palettes();
         let (palette, theme_name) = super::resolve_effective_theme(
             &self.state.theme_runtime,
             self.state.host_terminal_appearance,

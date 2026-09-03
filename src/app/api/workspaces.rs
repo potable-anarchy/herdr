@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::api::schema::{
     EventData, EventEnvelope, EventKind, ResponseResult, WorkspaceCloseParams,
     WorkspaceCreateParams, WorkspaceMoveBlockParams, WorkspaceMoveParams, WorkspaceRenameParams,
-    WorkspaceReportMetadataParams, WorkspaceTarget,
+    WorkspaceReportMetadataParams, WorkspaceSetThemeParams, WorkspaceTarget,
 };
 use crate::app::App;
 
@@ -122,6 +122,50 @@ impl App {
                 label: params.label,
             },
         });
+
+        encode_success(
+            id,
+            ResponseResult::WorkspaceInfo {
+                workspace: self.workspace_info(index),
+            },
+        )
+    }
+
+    pub(super) fn handle_workspace_set_theme(
+        &mut self,
+        id: String,
+        params: WorkspaceSetThemeParams,
+    ) -> String {
+        let Some(index) = self.parse_workspace_id(&params.workspace_id) else {
+            return workspace_not_found(id, &params.workspace_id);
+        };
+        if self.state.workspaces.get(index).is_none() {
+            return workspace_not_found(id, &params.workspace_id);
+        }
+        let theme = match params.theme.as_deref() {
+            None => None,
+            Some(name) => match crate::config::canonical_theme_name(name) {
+                Some(canonical) => Some(canonical.to_owned()),
+                None => {
+                    return encode_error(
+                        id,
+                        "invalid_theme",
+                        format!(
+                            "unknown theme {name:?}; expected one of {}",
+                            crate::config::THEME_NAMES.join(", ")
+                        ),
+                    );
+                }
+            },
+        };
+        let workspace = &mut self.state.workspaces[index];
+        workspace.theme = theme;
+        crate::logging::workspace_theme_changed(&workspace.id, workspace.theme.as_deref());
+        self.state.rebuild_workspace_theme_palettes();
+        self.state.mark_session_dirty();
+        self.schedule_session_save();
+        self.render_dirty.request_generic();
+        self.render_notify.notify_one();
 
         encode_success(
             id,
@@ -460,6 +504,90 @@ mod tests {
         );
         shutdown_test_runtimes(&mut app);
         let _ = std::fs::remove_dir_all(&focused_cwd);
+    }
+
+    fn app_with_one_workspace() -> App {
+        let (_api_tx, api_rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut app = App::new(
+            &Config::default(),
+            crate::app::AppPolicy::TEST,
+            None,
+            api_rx,
+            crate::api::EventHub::default(),
+        );
+        app.state.workspaces = vec![Workspace::test_new("themed")];
+        app.state.active = Some(0);
+        app.state.selected = 0;
+        app
+    }
+
+    #[tokio::test]
+    async fn workspace_set_theme_stores_canonical_name_and_resolves_palette() {
+        let mut app = app_with_one_workspace();
+        let workspace_id = app.public_workspace_id(0);
+        let response = app.handle_workspace_set_theme(
+            "req".into(),
+            WorkspaceSetThemeParams {
+                workspace_id: workspace_id.clone(),
+                theme: Some("Tokyo Night".into()),
+            },
+        );
+        let success: SuccessResponse = serde_json::from_str(&response).unwrap();
+        assert!(matches!(
+            success.result,
+            ResponseResult::WorkspaceInfo { .. }
+        ));
+        assert_eq!(
+            app.state.workspaces[0].theme.as_deref(),
+            Some("tokyo-night")
+        );
+        assert_eq!(
+            app.state.palette_for_workspace(&workspace_id).accent,
+            crate::app::state::Palette::from_name("tokyo-night")
+                .unwrap()
+                .accent
+        );
+        assert!(app.state.session_dirty);
+
+        let response = app.handle_workspace_set_theme(
+            "req2".into(),
+            WorkspaceSetThemeParams {
+                workspace_id: workspace_id.clone(),
+                theme: None,
+            },
+        );
+        let _: SuccessResponse = serde_json::from_str(&response).unwrap();
+        assert!(app.state.workspaces[0].theme.is_none());
+        assert_eq!(
+            app.state.palette_for_workspace(&workspace_id).accent,
+            app.state.palette.accent
+        );
+    }
+
+    #[tokio::test]
+    async fn workspace_set_theme_rejects_unknown_theme_and_workspace() {
+        let mut app = app_with_one_workspace();
+        let workspace_id = app.public_workspace_id(0);
+        let response = app.handle_workspace_set_theme(
+            "req".into(),
+            WorkspaceSetThemeParams {
+                workspace_id: workspace_id.clone(),
+                theme: Some("not-a-theme".into()),
+            },
+        );
+        let error: ErrorResponse = serde_json::from_str(&response).unwrap();
+        assert_eq!(error.error.code, "invalid_theme");
+        assert!(app.state.workspaces[0].theme.is_none());
+
+        let response = app.handle_workspace_set_theme(
+            "req".into(),
+            WorkspaceSetThemeParams {
+                workspace_id: "wzzzz".into(),
+                theme: Some("nord".into()),
+            },
+        );
+        let error: ErrorResponse = serde_json::from_str(&response).unwrap();
+        assert_eq!(error.error.code, "workspace_not_found");
     }
 
     #[tokio::test]

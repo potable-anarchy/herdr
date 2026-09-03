@@ -861,6 +861,8 @@ pub struct AppState {
     pub theme_name: String,
     /// Runtime theme configuration used to resolve manual and auto-switch palettes.
     pub theme_runtime: ThemeRuntimeConfig,
+    /// Resolved palettes for per-workspace theme overrides, keyed by canonical theme name.
+    pub workspace_theme_palettes: std::collections::HashMap<String, Palette>,
     /// Last known foreground host terminal appearance.
     pub host_terminal_appearance: Option<HostAppearance>,
     /// True when the foreground host explicitly reported appearance via Mode 2031.
@@ -892,6 +894,34 @@ pub struct AppState {
 }
 
 impl AppState {
+    /// Palette for the given public workspace id: its theme override when set, otherwise the global palette.
+    pub fn palette_for_workspace(&self, workspace_id: &str) -> &Palette {
+        self.workspaces
+            .iter()
+            .find(|workspace| workspace.id == workspace_id)
+            .and_then(|workspace| workspace.theme.as_deref())
+            .and_then(|theme| self.workspace_theme_palettes.get(theme))
+            .unwrap_or(&self.palette)
+    }
+
+    /// Re-resolve every per-workspace theme override against the current theme runtime.
+    pub fn rebuild_workspace_theme_palettes(&mut self) {
+        let mut palettes = std::collections::HashMap::new();
+        for theme in self
+            .workspaces
+            .iter()
+            .filter_map(|workspace| workspace.theme.as_deref())
+        {
+            if !palettes.contains_key(theme) {
+                palettes.insert(
+                    theme.to_owned(),
+                    crate::app::named_theme_palette(&self.theme_runtime, theme),
+                );
+            }
+        }
+        self.workspace_theme_palettes = palettes;
+    }
+
     pub(crate) fn mark_session_dirty(&mut self) {
         self.session_dirty = true;
     }
@@ -1090,6 +1120,7 @@ impl AppState {
                 custom: None,
                 legacy_accent: None,
             },
+            workspace_theme_palettes: std::collections::HashMap::new(),
             host_terminal_appearance: None,
             host_terminal_appearance_explicit: false,
             integration_recommendations: Vec::new(),
