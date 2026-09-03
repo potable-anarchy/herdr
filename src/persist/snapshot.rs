@@ -66,6 +66,8 @@ pub struct WorkspaceSnapshot {
     pub tabs: Vec<TabSnapshot>,
     #[serde(default)]
     pub active_tab: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -155,6 +157,7 @@ impl From<LegacyWorkspaceSnapshot> for WorkspaceSnapshot {
 
         Self {
             id: None,
+            theme: None,
             custom_name: snap.custom_name,
             identity_cwd,
             worktree_space: None,
@@ -283,6 +286,7 @@ fn capture_workspace(
 ) -> WorkspaceSnapshot {
     WorkspaceSnapshot {
         id: Some(ws.id.clone()),
+        theme: ws.theme.clone(),
         custom_name: ws.custom_name.clone(),
         identity_cwd: ws
             .resolved_identity_cwd_from(terminals, terminal_runtimes)
@@ -481,6 +485,41 @@ mod tests {
     use ratatui::layout::{Direction, Rect};
 
     use super::*;
+
+    #[test]
+    fn workspace_snapshot_theme_round_trips_and_defaults_to_none() {
+        let with_theme = WorkspaceSnapshot {
+            id: Some("wabc".into()),
+            custom_name: None,
+            identity_cwd: PathBuf::from("/repo"),
+            worktree_space: None,
+            public_pane_numbers: HashMap::new(),
+            next_public_pane_number: 2,
+            public_tab_numbers: vec![1],
+            next_public_tab_number: 2,
+            tabs: Vec::new(),
+            active_tab: 0,
+            theme: Some("nord".into()),
+        };
+        let json = serde_json::to_value(&with_theme).unwrap();
+        assert_eq!(json["theme"], serde_json::json!("nord"));
+        let restored: WorkspaceSnapshot = serde_json::from_value(json).unwrap();
+        assert_eq!(restored.theme.as_deref(), Some("nord"));
+
+        let without_theme = WorkspaceSnapshot {
+            theme: None,
+            ..with_theme
+        };
+        let json = serde_json::to_value(&without_theme).unwrap();
+        assert!(json.get("theme").is_none());
+
+        let legacy = serde_json::json!({
+            "identity_cwd": "/repo",
+            "tabs": []
+        });
+        let restored: WorkspaceSnapshot = serde_json::from_value(legacy).unwrap();
+        assert!(restored.theme.is_none());
+    }
     use crate::app::{AppState, Mode};
     use crate::layout::NavDirection;
     use crate::workspace::Workspace;
@@ -659,6 +698,7 @@ mod tests {
         let snap = SessionSnapshot {
             workspaces: vec![WorkspaceSnapshot {
                 id: Some("wproj".to_string()),
+                theme: None,
                 custom_name: Some("pi-mono".to_string()),
                 identity_cwd: PathBuf::from("/home/can/Projects/herdr"),
                 worktree_space: None,
@@ -1226,6 +1266,7 @@ mod tests {
             version: SNAPSHOT_VERSION,
             workspaces: vec![WorkspaceSnapshot {
                 id: Some("test-ws".to_string()),
+                theme: None,
                 custom_name: Some("fallback test".to_string()),
                 identity_cwd: PathBuf::from("/tmp"),
                 worktree_space: None,

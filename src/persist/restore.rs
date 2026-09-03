@@ -418,6 +418,7 @@ fn restore_workspace(
             cached_git_ahead_behind: None,
             cached_git_space,
             worktree_space,
+            theme: snap.theme.clone(),
             metadata_tokens: crate::metadata_tokens::MetadataTokens::default(),
             metadata_token_sequences: HashMap::new(),
             public_pane_numbers,
@@ -1174,6 +1175,7 @@ mod tests {
             version: super::super::snapshot::SNAPSHOT_VERSION,
             workspaces: vec![WorkspaceSnapshot {
                 id: Some("workspace".into()),
+                theme: None,
                 custom_name: None,
                 identity_cwd: cwd.clone(),
                 worktree_space: None,
@@ -1254,6 +1256,7 @@ mod tests {
             version: super::super::snapshot::SNAPSHOT_VERSION,
             workspaces: vec![WorkspaceSnapshot {
                 id: Some("w1".into()),
+                theme: None,
                 custom_name: None,
                 identity_cwd: cwd.clone(),
                 worktree_space: None,
@@ -1363,6 +1366,7 @@ mod tests {
             version: super::super::snapshot::SNAPSHOT_VERSION,
             workspaces: vec![WorkspaceSnapshot {
                 id: Some("w1".into()),
+                theme: None,
                 custom_name: None,
                 identity_cwd: cwd.clone(),
                 worktree_space: None,
@@ -1446,6 +1450,7 @@ mod tests {
         let cwd = std::env::current_dir().unwrap();
         let snapshot = WorkspaceSnapshot {
             id: Some("w1".into()),
+            theme: None,
             custom_name: None,
             identity_cwd: cwd,
             worktree_space: None,
@@ -1485,6 +1490,7 @@ mod tests {
             version: super::super::snapshot::SNAPSHOT_VERSION,
             workspaces: vec![WorkspaceSnapshot {
                 id: Some("workspace".into()),
+                theme: None,
                 custom_name: None,
                 identity_cwd: cwd.clone(),
                 worktree_space: None,
@@ -1694,6 +1700,7 @@ mod tests {
             version: super::super::snapshot::SNAPSHOT_VERSION,
             workspaces: vec![WorkspaceSnapshot {
                 id: Some("workspace".into()),
+                theme: None,
                 custom_name: None,
                 identity_cwd: cwd,
                 worktree_space: None,
