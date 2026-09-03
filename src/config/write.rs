@@ -4,6 +4,7 @@ pub(crate) enum ConfigEdit<'a> {
     StatusIndicators(super::StatusIndicatorStyle),
     Sound(bool),
     ToastDelivery(super::ToastDelivery),
+    FocusFollowsMouse(bool),
 }
 
 impl ConfigEdit<'_> {
@@ -13,6 +14,7 @@ impl ConfigEdit<'_> {
             Self::StatusIndicators(_) => "status indicators",
             Self::Sound(_) => "sound setting",
             Self::ToastDelivery(_) => "toast setting",
+            Self::FocusFollowsMouse(_) => "focus setting",
         }
     }
 
@@ -31,6 +33,9 @@ impl ConfigEdit<'_> {
             ),
             Self::Sound(enabled) => {
                 super::upsert_section_bool(content, "ui.sound", "enabled", enabled)
+            }
+            Self::FocusFollowsMouse(enabled) => {
+                super::upsert_section_bool(content, "ui", "focus_follows_mouse", enabled)
             }
             Self::ToastDelivery(delivery) => {
                 let value = match delivery {
@@ -72,4 +77,26 @@ pub(crate) fn write_edit(edit: ConfigEdit<'_>) -> Result<(), String> {
     update_file_at(&super::config_path(), edit.description(), |content| {
         edit.apply(content)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ConfigEdit;
+
+    #[test]
+    fn focus_follows_mouse_edit_upserts_under_ui() {
+        let written = ConfigEdit::FocusFollowsMouse(true).apply("");
+        let parsed: toml::Value = toml::from_str(&written).unwrap();
+        assert_eq!(
+            parsed["ui"]["focus_follows_mouse"],
+            toml::Value::Boolean(true)
+        );
+
+        let toggled = ConfigEdit::FocusFollowsMouse(false).apply(&written);
+        let parsed: toml::Value = toml::from_str(&toggled).unwrap();
+        assert_eq!(
+            parsed["ui"]["focus_follows_mouse"],
+            toml::Value::Boolean(false)
+        );
+    }
 }

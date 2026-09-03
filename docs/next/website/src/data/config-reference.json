@@ -894,6 +894,12 @@
           "description": "Capture mouse input for Herdr's mouse UI."
         },
         {
+          "key": "ui.focus_follows_mouse",
+          "type": "boolean",
+          "default": "false",
+          "description": "Focus the pane under the mouse pointer without clicking."
+        },
+        {
           "key": "ui.copy_on_select",
           "type": "boolean",
           "default": "true",
