@@ -38,6 +38,7 @@ impl ClientShellState {
             selected: theme_index(&self.config.theme_name),
             original_theme_name: self.config.theme_name.clone(),
             original_palette: self.config.palette.clone(),
+            workspace_preview: None,
             integrations: Vec::new(),
             integration_messages: Vec::new(),
             loading_integrations: false,

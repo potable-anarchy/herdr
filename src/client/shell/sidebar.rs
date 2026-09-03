@@ -28,6 +28,7 @@ pub(crate) fn render_collapsed_sidebar(
     snapshot: &ClientShellSnapshot,
     config: &ClientShellConfig,
     selected_workspace_id: Option<&str>,
+    workspace_palettes: &HashMap<String, Palette>,
     hits: &mut ShellHitMap,
 ) {
     let palette = &config.palette;
@@ -46,23 +47,31 @@ pub(crate) fn render_collapsed_sidebar(
             1,
         );
         let selected = selected_workspace_id == Some(workspace.workspace_id.as_str());
+        let themed = workspace_palettes.get(&workspace.workspace_id);
+        let row_palette = themed.unwrap_or(palette);
         let selection_background =
-            if workspace.focused && palette.selection_bg == ratatui::style::Color::Reset {
-                palette.active_row_bg
+            if workspace.focused && row_palette.selection_bg == ratatui::style::Color::Reset {
+                row_palette.active_row_bg
             } else {
-                palette.selection_bg
+                row_palette.selection_bg
             };
         if selected {
             buffer.set_style(rect, Style::default().bg(selection_background));
         } else if workspace.focused {
-            buffer.set_style(rect, Style::default().bg(palette.active_row_bg));
+            buffer.set_style(rect, Style::default().bg(row_palette.active_row_bg));
         }
         let number_style = if selected {
             Style::default()
-                .fg(palette.overlay1)
+                .fg(row_palette.overlay1)
                 .bg(selection_background)
         } else if workspace.focused {
-            Style::default().fg(palette.text).bg(palette.active_row_bg)
+            Style::default()
+                .fg(row_palette.text)
+                .bg(row_palette.active_row_bg)
+        } else if themed.is_some() {
+            Style::default()
+                .fg(row_palette.accent)
+                .add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(palette.overlay0)
         };
@@ -293,12 +302,14 @@ pub(crate) fn render_sidebar(
         let rect = Rect::new(body.x, y, content_width, row_height);
         let selected = state.selected_workspace_id == Some(workspace.workspace_id.as_str());
         let dragged = state.dragged_workspace_id == Some(workspace.workspace_id.as_str());
+        let themed = state.workspace_palettes.get(&workspace.workspace_id);
+        let row_palette = themed.unwrap_or(palette);
         if selected {
-            buffer.set_style(rect, Style::default().bg(palette.selection_bg));
+            buffer.set_style(rect, Style::default().bg(row_palette.selection_bg));
         } else if dragged {
-            buffer.set_style(rect, Style::default().bg(palette.surface1));
+            buffer.set_style(rect, Style::default().bg(row_palette.surface1));
         } else if workspace.focused {
-            buffer.set_style(rect, Style::default().bg(palette.active_row_bg));
+            buffer.set_style(rect, Style::default().bg(row_palette.active_row_bg));
         }
         render_workspace_rows(
             buffer,
@@ -310,8 +321,15 @@ pub(crate) fn render_sidebar(
             rows,
             selected,
             dragged,
-            palette,
+            row_palette,
         );
+        if let Some(row_palette) = themed {
+            for bar_y in rect.y..rect.bottom() {
+                buffer[(rect.x, bar_y)]
+                    .set_symbol("▌")
+                    .set_fg(row_palette.accent);
+            }
+        }
         let group_toggle = parent_group_key(snapshot, entry.index).map(|key| {
             let rect = Rect::new(rect.right().saturating_sub(1), rect.y, 1, 1);
             put_text(

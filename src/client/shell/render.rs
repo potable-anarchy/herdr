@@ -208,6 +208,8 @@ pub(super) struct ShellRenderState<'a> {
     pub(super) selected_workspace_id: Option<&'a str>,
     pub(super) dragged_workspace_id: Option<&'a str>,
     pub(super) workspace_drop_indicator_row: Option<u16>,
+    /// Resolved per-space palettes keyed by workspace id (only spaces with an override).
+    pub(super) workspace_palettes: &'a HashMap<String, Palette>,
 }
 
 pub(super) fn render_shell(
@@ -235,6 +237,7 @@ pub(super) fn render_shell(
                 snapshot,
                 config,
                 state.selected_workspace_id,
+                state.workspace_palettes,
                 &mut hits,
             );
         } else {
@@ -249,11 +252,17 @@ pub(super) fn render_shell(
         }
     }
     if layout.tab_bar.height > 0 {
+        let tab_palette = snapshot
+            .focused_workspace_id
+            .as_deref()
+            .and_then(|id| state.workspace_palettes.get(id))
+            .unwrap_or(&config.palette);
         render_tab_bar(
             buffer,
             layout.tab_bar,
             snapshot,
             config,
+            tab_palette,
             state.tab_scroll,
             state.reveal_focused_tab,
             state.tab_drag_insert_index,

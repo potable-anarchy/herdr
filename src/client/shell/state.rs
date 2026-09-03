@@ -444,6 +444,8 @@ pub(super) struct ClientSettingsOverlay {
     pub(super) selected: usize,
     pub(super) original_theme_name: String,
     pub(super) original_palette: Palette,
+    /// Live preview for a space-targeted picker: `(workspace_id, theme name or None for global)`.
+    pub(super) workspace_preview: Option<(String, Option<String>)>,
     pub(super) integrations: Vec<crate::api::schema::IntegrationInfo>,
     pub(super) integration_messages: Vec<String>,
     pub(super) loading_integrations: bool,
@@ -891,6 +893,8 @@ pub(crate) struct ClientShellState {
     pub(super) last_tab_bar_width: Option<u16>,
     pub(super) last_composed_size: Option<(u16, u16)>,
     pub(super) hits: ShellHitMap,
+    /// Resolved palettes for per-space theme overrides, keyed by canonical theme name.
+    pub(super) theme_palette_cache: HashMap<String, Palette>,
     pub(super) mode: ClientShellMode,
     pub(super) navigate_workspace_id: Option<String>,
     pub(super) overlay: Option<ClientShellOverlay>,
@@ -1033,6 +1037,7 @@ impl ClientShellState {
             last_tab_bar_width: None,
             last_composed_size: None,
             hits: ShellHitMap::default(),
+            theme_palette_cache: HashMap::new(),
             mode: ClientShellMode::Terminal,
             navigate_workspace_id: None,
             overlay,
@@ -1175,6 +1180,38 @@ impl ClientShellState {
             cols: surface.width.max(1),
             rows: surface.height.max(1),
         }
+    }
+
+    /// Palettes for spaces with a theme override, keyed by workspace id. Honors the
+    /// settings overlay preview for the targeted space. Unknown names are skipped so
+    /// those spaces fall back to the global palette.
+    pub(super) fn workspace_palettes(&mut self) -> HashMap<String, Palette> {
+        let mut palettes = HashMap::new();
+        let Some(snapshot) = self.snapshot.as_deref() else {
+            return palettes;
+        };
+        let preview = match self.overlay.as_ref() {
+            Some(ClientShellOverlay::Settings(settings)) => settings.workspace_preview.clone(),
+            _ => None,
+        };
+        let runtime = &self.config.theme_runtime;
+        for workspace in &snapshot.workspaces {
+            let theme = match preview.as_ref() {
+                Some((workspace_id, theme)) if *workspace_id == workspace.workspace_id => {
+                    theme.as_deref()
+                }
+                _ => workspace.theme.as_deref(),
+            };
+            let Some(theme) = theme.and_then(crate::config::canonical_theme_name) else {
+                continue;
+            };
+            let palette = self
+                .theme_palette_cache
+                .entry(theme.to_owned())
+                .or_insert_with(|| crate::app::client_palette_for_theme(runtime, theme));
+            palettes.insert(workspace.workspace_id.clone(), palette.clone());
+        }
+        palettes
     }
 
     pub(crate) fn set_snapshot(&mut self, mut snapshot: Box<ClientShellSnapshot>) {

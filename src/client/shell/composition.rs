@@ -22,6 +22,7 @@ fn restore_mode_bar(
 impl ClientShellState {
     pub(crate) fn compose(&mut self, cols: u16, rows: u16) -> Option<FrameData> {
         self.last_composed_size = Some((cols, rows));
+        let workspace_palettes = self.workspace_palettes();
         let snapshot = self.snapshot.as_deref()?;
         let surface = self.pane_surface.as_ref()?;
         if snapshot.revision != surface.projection_revision {
@@ -67,6 +68,7 @@ impl ClientShellState {
                     .flatten(),
                 dragged_workspace_id,
                 workspace_drop_indicator_row,
+                workspace_palettes: &workspace_palettes,
             },
         );
         self.hits.panes = surface
