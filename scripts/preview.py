@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
 from typing import Any
+
+DEFAULT_REPO = os.environ.get("GITHUB_REPOSITORY", "herdrdev/herdr")
 
 ASSET_TARGETS = (
     "linux-x86_64",
@@ -316,13 +319,13 @@ def main() -> int:
     notes.add_argument("--commit", required=True)
     notes.add_argument("--build-id", required=True)
     notes.add_argument("--base-version", required=True)
-    notes.add_argument("--repo", default="herdrdev/herdr")
+    notes.add_argument("--repo", default=DEFAULT_REPO)
     notes.add_argument("--output", required=True)
     notes.set_defaults(func=cmd_notes)
 
     manifest = sub.add_parser("manifest")
     manifest.add_argument("--output", default="distribution/preview.json")
-    manifest.add_argument("--repo", default="herdrdev/herdr")
+    manifest.add_argument("--repo", default=DEFAULT_REPO)
     manifest.add_argument("--tag", required=True)
     manifest.add_argument("--build-id", required=True)
     manifest.add_argument("--commit", required=True)
