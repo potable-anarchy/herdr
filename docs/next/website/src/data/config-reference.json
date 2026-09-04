@@ -458,6 +458,12 @@
           "description": "Check herdr.dev for new Herdr versions in the background."
         },
         {
+          "key": "update.preview_manifest_url",
+          "type": "string",
+          "default": "\"https://herdr.dev/preview.json\"",
+          "description": "Preview manifest URL override, for forks or mirrors that host their own preview builds."
+        },
+        {
           "key": "update.manifest_check",
           "type": "boolean",
           "default": "true",

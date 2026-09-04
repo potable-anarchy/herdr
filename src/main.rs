@@ -126,6 +126,9 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
 # Check herdr.dev for remote agent-detection manifest updates in the background.
 # manifest_check = true
 
+# Preview manifest URL override for forks or mirrors that host their own preview builds.
+# preview_manifest_url = "https://herdr.dev/preview.json"
+
 [keys]
 # Prefix key to enter prefix mode (default: "ctrl+b")
 # Examples: "ctrl+b", "f12", "esc", "-"

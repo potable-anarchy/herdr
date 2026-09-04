@@ -28,12 +28,14 @@ impl UpdateChannelConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct UpdateConfig {
     pub channel: UpdateChannelConfig,
     pub version_check: bool,
     pub manifest_check: bool,
+    /// Preview manifest URL override, for forks or mirrors that host their own preview builds. Default: herdr.dev.
+    pub preview_manifest_url: Option<String>,
 }
 
 impl Default for UpdateConfig {
@@ -42,6 +44,7 @@ impl Default for UpdateConfig {
             channel: default_update_channel(),
             version_check: true,
             manifest_check: true,
+            preview_manifest_url: None,
         }
     }
 }
@@ -1605,6 +1608,22 @@ sidebar_collapsed_mode = "hidden"
         assert_eq!(validated_sidebar_bounds(0, u16::MAX), Some((0, u16::MAX)));
         assert_eq!(validated_sidebar_bounds(50, 30), None);
         assert_eq!(validated_sidebar_bounds(u16::MAX, 0), None);
+    }
+
+    #[test]
+    fn preview_manifest_url_default_none_and_parse() {
+        assert!(Config::default().update.preview_manifest_url.is_none());
+
+        let toml = r#"
+[update]
+channel = "preview"
+preview_manifest_url = "https://example.test/preview.json"
+"#;
+        let config: Config = toml::from_str(toml).unwrap();
+        assert_eq!(
+            config.update.preview_manifest_url.as_deref(),
+            Some("https://example.test/preview.json")
+        );
     }
 
     #[test]

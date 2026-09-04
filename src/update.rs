@@ -23,7 +23,7 @@ use interprocess::local_socket::traits::Stream as _;
 use serde::{Deserialize, Deserializer};
 
 const STABLE_UPDATE_MANIFEST_URL: &str = "https://herdr.dev/latest.json";
-const PREVIEW_UPDATE_MANIFEST_URL: &str = "https://herdr.dev/preview.json";
+const DEFAULT_PREVIEW_UPDATE_MANIFEST_URL: &str = "https://herdr.dev/preview.json";
 const HOMEBREW_FORMULA_API_URL: &str = "https://formulae.brew.sh/api/formula/herdr.json";
 const HERDR_UPDATE_COMMAND: &str = "herdr update";
 const HOMEBREW_UPDATE_COMMAND: &str = "brew update && brew upgrade herdr";
@@ -329,8 +329,23 @@ fn fetch_update_manifest() -> Result<UpdateManifest, String> {
     fetch_json_manifest(STABLE_UPDATE_MANIFEST_URL)
 }
 
+/// Preview manifest URL: the `update.preview_manifest_url` override when set and
+/// non-blank, otherwise the herdr.dev manifest.
+pub(crate) fn preview_manifest_url(update: &crate::config::UpdateConfig) -> String {
+    update
+        .preview_manifest_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|url| !url.is_empty())
+        .map_or_else(
+            || DEFAULT_PREVIEW_UPDATE_MANIFEST_URL.to_owned(),
+            str::to_owned,
+        )
+}
+
 fn fetch_preview_manifest() -> Result<PreviewManifest, String> {
-    fetch_json_manifest(PREVIEW_UPDATE_MANIFEST_URL)
+    let url = preview_manifest_url(&crate::config::Config::load().config.update);
+    fetch_json_manifest(&url)
 }
 
 fn fetch_json_manifest<T>(url: &str) -> Result<T, String>
@@ -2400,6 +2415,25 @@ fn platform_target() -> (&'static str, &'static str) {
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn preview_manifest_url_prefers_non_blank_override() {
+        let mut update = crate::config::UpdateConfig::default();
+        assert_eq!(
+            preview_manifest_url(&update),
+            "https://herdr.dev/preview.json"
+        );
+        update.preview_manifest_url = Some("   ".into());
+        assert_eq!(
+            preview_manifest_url(&update),
+            "https://herdr.dev/preview.json"
+        );
+        update.preview_manifest_url = Some(" https://example.test/preview.json ".into());
+        assert_eq!(
+            preview_manifest_url(&update),
+            "https://example.test/preview.json"
+        );
+    }
     use std::os::unix::net::UnixListener;
     use std::sync::{
         atomic::{AtomicBool, Ordering},
