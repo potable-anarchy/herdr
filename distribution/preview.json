@@ -1,37 +1,68 @@
 {
   "schema_version": 1,
   "channel": "preview",
-  "base_version": "0.8.2",
-  "build_id": "2026-09-04-a82d363d456b",
-  "commit": "a82d363d456b88a5a3f4a4711e71e5302ed5b0d0",
-  "built_at": "2026-09-05T04:27:08Z",
+  "base_version": "0.9.0",
+  "build_id": "2026-09-14-453e2aa6b7c3",
+  "commit": "453e2aa6b7c38ce7f6b53cec9020dbeeebbf8b7a",
+  "built_at": "2026-09-15T03:46:45Z",
   "protocol": 23,
   "endpoint_generation": 1,
-  "notes": "Preview build 2026-09-04-a82d363d456b\n\nBuilt from `a82d363d456b` on `master`.\nBase stable: v0.8.2\nCompare: https://github.com/potable-anarchy/herdr/compare/1d3049bd5f952418ead6c56047d53e3485b8a73d...a82d363d456b88a5a3f4a4711e71e5302ed5b0d0\n\n### Maintenance\n- Use CURRENT_PROTOCOL instead of stale hardcoded 22\n- Publish fork preview 2026-09-04-1d3049bd5f95",
+  "notes": "Preview build 2026-09-14-453e2aa6b7c3\n\nBuilt from `453e2aa6b7c3` on `master`.\nBase stable: v0.9.0\nCompare: https://github.com/potable-anarchy/herdr/compare/a82d363d456b88a5a3f4a4711e71e5302ed5b0d0...453e2aa6b7c38ce7f6b53cec9020dbeeebbf8b7a\n\n### Added\n- Add cursor-based editing to text inputs (#3698)\n- Add ctrl-hover highlighting and fix wrapped links (#4074)\n- Install windows remote host packages (#3687)\n- Add Letta Code detection and restore (#3107)\n- Support conditional sidebar token hiding (#3925)\n- Route cli commands to saved ssh machines (#3918)\n- Navigate and highlight workspaces across machines (#3755)\n- Make ui.pane_borders a three-state auto/always/off mode (#3234)\n- Add conditional styles for sidebar tokens (#3693)\n- Manage multiple ssh machines from one client (#3670)\n- Enable kitty graphics by default\n\n### Fixed\n- Prefer VT input for SSH clients (#4148)\n- Batch input trace diagnostics (#4146)\n- Reject stale pane surfaces after reconnect (#4141)\n- Map pixel mouse by integer cell pitch (#4140)\n- Protect integration configs from failed writes (#3973)\n- Avoid resending terminal cells for metadata updates (#4137)\n- Keep modified enter compatible with legacy panes (#4110)\n- Avoid lossy native Win32 input mode (#4133)\n- Scope window titles to each client view (#4130)\n- Restore saved machine screens after reconnect (#4126)\n- Default pane splits to the calling pane (#4123)\n- Detect pi working border (#4113)\n- Detect codex activity with static titles and queued inputs (#4099)\n- Remove stale maintainer username\n- Preserve agent panel scroll when switching machines (#4101)\n- Clean up idle ssh bridges and back off flapping connections (#4083)\n- Hide only kitty image placements overlapping overlays (#4081)\n- Re-assert host mouse modes after a terminal reconnect (#4079)\n- Restore mouse reporting when reattaching (#4080)\n- Scope agent views to the selected machine (#3784)\n- Clarify agent integration settings description\n- Keep plugins working after client-only updates (#4077)\n- Bound the foreground process-tree scan (#3674)\n- Clean up failed terminal observer setup (#4071)\n- Accept parameterized CSI-tilde F1-F4 keys (#4067)\n- Recognize kitty CSI-u codepoints for F1 through F12 (#2378)\n- Auto-expire worktree action error banners (#4063)\n- Keep an agent name through a process-exit observation (#3574)\n- Keep powershell cwd reporting in login mode (#4065)\n- Honor default_shell in login shell mode (#4060)\n- Keep muted sidebar and tab labels readable (#4062)\n- Keep hermes enabled list valid yaml (#4056)\n- Disable host mouse reporting on terminal restore (#4055)\n- Resolve ssh host aliases from git bash on windows (#4054)\n- Detect kimi npm shim on windows (#4053)\n- Transfer handoff descriptors in batches (#3411)\n- Retain validated split mouse reports across idle gaps (#4048)\n- Preserve super-modified pane keys (#4044)\n- Restrict claude session hooks to native sources (#4046)\n- Decouple pixel mouse from pane graphics (#4045)\n- Order ui accent before nested config tables (#2698)\n- Disconnect stalled terminal observers (#4039)\n- Avoid blocking proc reads for wsl agents (#2179)\n- Deflake windows endpoint flush drain test (#4021)\n- Update grok session after new (#2683)\n- Restore alternate-screen pane width (#4016)\n- Honor space row gaps across machines (#3740)\n- Recognize codex composer sparkles (#4015)\n- Allow retrying partial worktree removal (#3315)\n- Batch queued endpoint input frames (#4004)\n- Keep windows endpoint writes progressing (#3721)\n- Finish windows ssh setup after bridge exit (#3719)\n- Ignore nested OMP session reports (#3994)\n- Preserve complete alternate-screen history reads (#3979)\n- Suppress Windows dead-key fallback characters in remote panes (#3972)\n- Opencode v2 lifecycle reporting (#3757)\n- Preserve whole-word selection while dragging (#3969)\n- Show SSH authentication output (#3609)\n- Keep utf8 bom from breaking config reads and writes (#3962)\n- Lint all targets on windows (#3963)\n- Flush Windows Codex paste burst before prompt submit (#3961)\n- Detect cline launchers and idle states (#3959)\n- Preserve local direct kitty graphics transport (#3957)\n- Recognize claude unicode spinner during active turns (#3953)\n- Preserve plugin registry symlinks (#3927)\n- Explain zig version requirement on build failure (#3931)\n- Keep terminal snapshots consistent while scrolling (#3928)\n- Bound mouse selection repaint cadence (#3901)\n- Accept machine add options before the SSH target (#3897)\n- Accept WezTerm control key reports (#3592)\n- Preserve focused viewer geometry during activation (#3746)\n- Use host background for pane selection highlights (#3894)\n- Preserve legacy mouse reports over ssh (#3742)\n- Identify Herdr desktop notifications (#3639)\n- Accept session names after option terminator (#3222)\n- Keep spaces sidebar stable during resize (#3862)\n- Stop token selection at CJK punctuation (#3708)\n- Support Windows session paths (#3729)\n- Restore connected session navigator tree glyphs (#3861)\n- Project public agent focus to attached clients (#3764)\n- Retain double-click selections and make tests root-safe (#3854)\n- Restore plugin focus events for client navigation (#3850)\n- Avoid full-screen copies for retained client updates (#3837)\n- Restore autofocus when creating worktrees (#3787)\n- Support preinstalled windows remote hosts (#3661)\n- Collapse worktree groups with saved machines (#3781)\n- Show ssh errors during machine setup (#3733)\n- Reduce idle ssh cpu without dropping final output (#3728)\n- Require explicit consent for remote server replacement\n- Preserve sessions after interrupted pane exits (#3418)\n- Match claude bash permission prompts at every cursor position (#3615)\n- Resolve queued submissions when pty actor exits\n- Keep manual selections active during terminal output (#3684)\n- Consume failed selection copies without interrupting agents (#3681)\n- Prevent OpenCode child prompts from leaving status blocked (#3669)\n- Resolve Windows plugin pane launch paths (#3666)\n- Run the full applicable test suite on windows (#3660)\n- Keep selections visible without host colors (#2710)\n- Retain mouse selections across unrelated terminal output (#3641)\n- Preserve pixel mouse after sgr reassertion (#3637)\n- Make Windows Codex prompt delay size-aware (#3552)\n- Detect codex startup update prompts (#3636)\n- Use active release directory on PATH (#3618)\n- Persist Codex resume sessions at launch (#3617)\n- Resolve Devin config on Windows (#3595)\n- Statically link the Windows CRT (#3594)\n- Reject Android in Unix installer (#3577)\n- Preserve LF paste order (#3582)\n- Batch host palette updates (#3580)\n- Preserve ctrl+slash key identity (#3578)\n- Read Windows clipboard images in WSL (#3572)\n\n### Performance\n- Compress idle terminal scrollback (#3556)\n\n### Maintenance\n- Build fork previews with zig 0.16.0\n- Deflake recent CI failures (#4139)\n- Restore zig local build cache reuse (#4118)\n- Deflake media player invalid media assertion (#4082)\n- Migrate remaining pinned actions to node24 (#4023)\n- Add jjliebig as approved contributor and maintainer\n- Deflake federated local input race (#4066)\n- Deflake windows metadata ttl expiry assertion (#4050)\n- Relax windows docs snapshot timeout (#4049)\n- Enable nesting in throwaway repro setup\n- Reuse compiler state across validation runs (#3956)\n- Make windows cross-check path assertions portable (#3954)\n- Add one-time windows cross-check setup\n- Trigger nix updates after stable releases\n- Upgrade libghostty and preserve terminal behavior (#3906)\n- Move marketplace worker to website repository\n- Publish preview documentation\n- Prepare 0.9.0 release documentation\n- Publish preview documentation\n- Approve markjaquith as contributor\n- Publish fork preview 2026-09-04-a82d363d456b\n\n### Other\n- Sync upstream herdrdev/herdr master (0.9.0)\n- V0.9.0",
   "assets": {
     "linux-x86_64": {
-      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-04-a82d363d456b/herdr-linux-x86_64",
-      "sha256": "fe2fa341a251c568f651a658445ec66166308e98ce68c766ee8d6daf42c8936d"
+      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-linux-x86_64",
+      "sha256": "803521f49b5b637b9a828d9eb5b26ae052df73d55417858d400e81cd7c95c52d"
     },
     "linux-aarch64": {
-      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-04-a82d363d456b/herdr-linux-aarch64",
-      "sha256": "059a2f56ce24cdbe6480da3fc368fe628e63854edb89f5bf3c3d8f0708c2cb82"
+      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-linux-aarch64",
+      "sha256": "312c3dee275f543a51dde7f6abed85355f7952652b79179dace5392444b7d378"
     },
     "macos-x86_64": {
-      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-04-a82d363d456b/herdr-macos-x86_64",
-      "sha256": "9ce4f7ebad00235ee995ac5959d17f793c6903f56deef1543ef79409cace6685"
+      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-macos-x86_64",
+      "sha256": "3d092347f2ee1f7dc9794f4fae104685ca9680f6a4bd69a7d2621442996dffe4"
     },
     "macos-aarch64": {
-      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-04-a82d363d456b/herdr-macos-aarch64",
-      "sha256": "42bb323ac918b97346e77eee7b43fb8de25d70290147ce1eacc65e376a22877a"
+      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-macos-aarch64",
+      "sha256": "1e17119e6e4405553005d59f0fc8f44ae60fd559fa1a36472478922da18c1a02"
     },
     "windows-x86_64": {
-      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-04-a82d363d456b/herdr-windows-x86_64.zip",
-      "sha256": "62020edd918f556fc48171735225ac381780e1c5dda844392de97c1c2f20b74c",
+      "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-windows-x86_64.zip",
+      "sha256": "5ced8c9fc160b2ff2c3ecbcd65d220de65ad0d3c740e1eee3ced658cef9e52e9",
       "format": "zip"
     }
   },
   "builds": {
+    "2026-09-14-453e2aa6b7c3": {
+      "base_version": "0.9.0",
+      "commit": "453e2aa6b7c38ce7f6b53cec9020dbeeebbf8b7a",
+      "built_at": "2026-09-15T03:46:45Z",
+      "protocol": 23,
+      "endpoint_generation": 1,
+      "tag": "preview-2026-09-14-453e2aa6b7c3",
+      "assets": {
+        "linux-x86_64": {
+          "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-linux-x86_64",
+          "sha256": "803521f49b5b637b9a828d9eb5b26ae052df73d55417858d400e81cd7c95c52d"
+        },
+        "linux-aarch64": {
+          "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-linux-aarch64",
+          "sha256": "312c3dee275f543a51dde7f6abed85355f7952652b79179dace5392444b7d378"
+        },
+        "macos-x86_64": {
+          "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-macos-x86_64",
+          "sha256": "3d092347f2ee1f7dc9794f4fae104685ca9680f6a4bd69a7d2621442996dffe4"
+        },
+        "macos-aarch64": {
+          "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-macos-aarch64",
+          "sha256": "1e17119e6e4405553005d59f0fc8f44ae60fd559fa1a36472478922da18c1a02"
+        },
+        "windows-x86_64": {
+          "url": "https://github.com/potable-anarchy/herdr/releases/download/preview-2026-09-14-453e2aa6b7c3/herdr-windows-x86_64.zip",
+          "sha256": "5ced8c9fc160b2ff2c3ecbcd65d220de65ad0d3c740e1eee3ced658cef9e52e9",
+          "format": "zip"
+        }
+      }
+    },
     "2026-09-04-a82d363d456b": {
       "base_version": "0.8.2",
       "commit": "a82d363d456b88a5a3f4a4711e71e5302ed5b0d0",
@@ -860,31 +891,6 @@
         "macos-aarch64": {
           "url": "https://github.com/herdrdev/herdr/releases/download/preview-2026-06-03-fc82cbad2179/herdr-macos-aarch64",
           "sha256": "c8bcd63323c6daf671022a6872134c6178c153ddd89c4260fbb9b28fe162c18a"
-        }
-      }
-    },
-    "2026-06-02-cce3eacc49d2": {
-      "base_version": "0.6.6",
-      "commit": "cce3eacc49d281fd087ebf0d43eea3e08038033f",
-      "built_at": "2026-06-02T20:59:19Z",
-      "protocol": 12,
-      "tag": "preview-2026-06-02-cce3eacc49d2",
-      "assets": {
-        "linux-x86_64": {
-          "url": "https://github.com/herdrdev/herdr/releases/download/preview-2026-06-02-cce3eacc49d2/herdr-linux-x86_64",
-          "sha256": "c22aa4b2e5fadd6e04910f92bbc125aa749c6a9a9edd281082f07a839e37cbff"
-        },
-        "linux-aarch64": {
-          "url": "https://github.com/herdrdev/herdr/releases/download/preview-2026-06-02-cce3eacc49d2/herdr-linux-aarch64",
-          "sha256": "26a15f394fd27425ab252424fd090913c1ae5cf644f4f3aac0f06c086bdaabb7"
-        },
-        "macos-x86_64": {
-          "url": "https://github.com/herdrdev/herdr/releases/download/preview-2026-06-02-cce3eacc49d2/herdr-macos-x86_64",
-          "sha256": "c89a97b730e7e3b132a2eca53d49448ec2fb969362e903ce99b5b7b0fbd4d5b1"
-        },
-        "macos-aarch64": {
-          "url": "https://github.com/herdrdev/herdr/releases/download/preview-2026-06-02-cce3eacc49d2/herdr-macos-aarch64",
-          "sha256": "0f6c260d9cc65d01c1a58baca5f3ae8150b91f0a16a2ae223b71e76c9dda444f"
         }
       }
     }
