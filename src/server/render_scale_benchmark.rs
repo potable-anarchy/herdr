@@ -39,10 +39,13 @@ struct RenderPipeline {
 
 impl RenderPipeline {
     fn new(workspaces: Vec<Workspace>) -> Self {
-        let config = Config::default();
+        Self::with_config(workspaces, &Config::default())
+    }
+
+    fn with_config(workspaces: Vec<Workspace>, config: &Config) -> Self {
         let (_api_tx, api_rx) = tokio::sync::mpsc::unbounded_channel();
         let mut app = App::new(
-            &config,
+            config,
             AppPolicy::TEST,
             None,
             api_rx,
@@ -53,7 +56,7 @@ impl RenderPipeline {
         app.state.selected = 0;
         app.state.pane_scrollbars = true;
 
-        let mut client = ClientShellState::new(ClientShellConfig::from_config(&config));
+        let mut client = ClientShellState::new(ClientShellConfig::from_config(config));
         client.set_snapshot(Box::new(super::client_shell::snapshot(
             &app,
             "bench-boot",
@@ -171,7 +174,10 @@ fn summarize(mut samples: Vec<Duration>) -> StageStats {
 }
 
 fn profile(build: fn(usize) -> Vec<Workspace>, count: usize) -> PipelineStats {
-    let mut pipeline = RenderPipeline::new(build(count));
+    profile_pipeline(RenderPipeline::new(build(count)))
+}
+
+fn profile_pipeline(mut pipeline: RenderPipeline) -> PipelineStats {
     for _ in 0..WARMUP_COUNT {
         black_box(pipeline.render_once());
     }
@@ -263,6 +269,134 @@ fn print_snapshot_encoding_profiles(label: &str, build: fn(usize) -> Vec<Workspa
     }
 }
 
+fn print_token_rule_profiles() {
+    let rules = std::iter::repeat_n(
+        "{ contains = 'NO-MATCH', ignore_case = true, bold = true }",
+        15,
+    )
+    .chain(std::iter::once("{ starts_with = 'bench', bold = true }"))
+    .collect::<Vec<_>>()
+    .join(",");
+    for (label, build) in [
+        ("background", workspaces as fn(usize) -> Vec<Workspace>),
+        ("active", active_panes),
+    ] {
+        for conditional in [false, true] {
+            let config: Config = toml::from_str(&format!(
+                "[ui.sidebar.agents]\nrows = [[{{ token = 'workspace', rules = [{}] }}]]\n[ui.sidebar.spaces]\nrows = [[{{ token = 'workspace', rules = [{}] }}]]",
+                if conditional { &rules } else { "" }, if conditional { &rules } else { "" },
+            )).unwrap();
+            let rows = [1, 15].map(|count| {
+                let mut pipeline = RenderPipeline::with_config(build(count), &config);
+                pipeline.app.state.ensure_test_terminals();
+                for terminal in pipeline.app.state.terminals.values_mut() {
+                    terminal.detected_agent = Some(crate::detect::Agent::Pi);
+                }
+                pipeline
+                    .client
+                    .set_snapshot(Box::new(super::client_shell::snapshot(
+                        &pipeline.app,
+                        "bench-boot",
+                        1,
+                        None,
+                        None,
+                    )));
+                (count, profile_pipeline(pipeline))
+            });
+            println!(
+                "token rules {label}: populated agents, rules_per_token={}",
+                if conditional { 16 } else { 0 }
+            );
+            print_stage("client shell composition", &rows, |stats| stats.client);
+        }
+    }
+}
+
+fn print_surface_reuse_profiles() {
+    println!("surface encode + decode at {COLS}x{ROWS}");
+    println!("  layout       panes  cells_changed  reuse  median_us  bytes_per_update");
+    for (label, build) in [
+        ("background", workspaces as fn(usize) -> Vec<Workspace>),
+        ("active", active_panes),
+    ] {
+        for count in [1, 15] {
+            let mut pipeline = RenderPipeline::new(build(count));
+            pipeline.render_once();
+            let rendered = super::client_shell::render_pane_surface(
+                &mut pipeline.app,
+                Some(crate::ui::TabSurfaceTarget {
+                    workspace_index: 0,
+                    tab_index: 0,
+                }),
+                Rect::new(0, 0, COLS, ROWS),
+                true,
+                false,
+                HostCellSize::default(),
+                &pipeline.graphics_delivery,
+                1,
+            );
+            let surface = PaneSurfaceFrame {
+                boot_id: "bench-boot".into(),
+                projection_revision: 1,
+                surface_revision: 0,
+                frame: rendered.frame,
+                panes: rendered.panes,
+                splits: rendered.splits,
+                popup: rendered.popup,
+                graphics: rendered.graphics,
+            };
+            for cells_changed in [false, true] {
+                for enabled in [false, true] {
+                    let mut state = super::render_stream::ClientRenderState::new(
+                        crate::protocol::RenderEncoding::SemanticFrame,
+                    );
+                    state.enable_surface_reuse(enabled);
+                    let mut decoder = crate::protocol::surface_reuse::Decoder::default();
+                    let initial = state.prepare_pane_surface(surface.clone()).unwrap();
+                    if enabled {
+                        decoder.decode(initial.message().clone()).unwrap();
+                    }
+                    state.commit_sent_frame(initial);
+                    let mut samples = Vec::new();
+                    let mut bytes_per_update = 0;
+                    for index in 0..WARMUP_COUNT + SAMPLE_COUNT {
+                        let mut candidate = surface.clone();
+                        candidate.projection_revision = index as u64 + 2;
+                        if cells_changed {
+                            candidate.frame.cells[0].symbol =
+                                if index % 2 == 0 { "a" } else { "b" }.into();
+                        }
+                        let started = Instant::now();
+                        let prepared = state.prepare_pane_surface(candidate).unwrap();
+                        let mut bytes = Vec::new();
+                        crate::protocol::write_message(&mut bytes, prepared.message()).unwrap();
+                        bytes_per_update = bytes.len();
+                        let decoded = crate::protocol::read_message(
+                            &mut bytes.as_slice(),
+                            crate::protocol::MAX_FRAME_SIZE,
+                        )
+                        .unwrap();
+                        black_box(if enabled {
+                            decoder.decode(decoded).unwrap()
+                        } else {
+                            decoded
+                        });
+                        state.commit_sent_frame(prepared);
+                        if index >= WARMUP_COUNT {
+                            samples.push(started.elapsed());
+                        }
+                    }
+                    let stats = summarize(samples);
+                    println!(
+                    "  {label:<10}  {count:>5}  {cells_changed:>13}  {enabled:>5}  {:>9}  {bytes_per_update:>16}",
+                    stats.median_us
+                );
+                }
+            }
+        }
+    }
+}
+
 #[tokio::test(flavor = "current_thread")]
 #[ignore = "manual client-rendered pipeline scaling profile"]
 async fn render_scale_profile() {
@@ -270,4 +404,6 @@ async fn render_scale_profile() {
     print_snapshot_encoding_profiles("background workspaces", workspaces);
     print_profiles("active panes (one workspace)", active_panes);
     print_snapshot_encoding_profiles("active panes", active_panes);
+    print_token_rule_profiles();
+    print_surface_reuse_profiles();
 }

@@ -108,6 +108,7 @@ impl Runtime {
         self.revision = self.revision.wrapping_add(1);
     }
 
+    #[cfg(test)]
     pub(crate) fn clear(&mut self) {
         self.slots.clear();
         self.mark_changed();
@@ -156,12 +157,6 @@ impl Runtime {
             .filter_map(Layer::inline_data)
             .map(<[u8]>::len)
             .sum()
-    }
-
-    pub(crate) fn active_for_pane(&self, pane_id: PaneId) -> bool {
-        self.slots
-            .iter()
-            .any(|((id, _), slot)| *id == pane_id && slot.layer.is_some())
     }
 
     pub(crate) fn attach_stream_active(
